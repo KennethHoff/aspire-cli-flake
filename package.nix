@@ -4,17 +4,19 @@
   fetchurl,
   glibc,
   icu,
+  openssl,
   makeWrapper,
   patchelf,
+  version ? "13.2.0-preview.1.26120.3",
+  hash ? "sha512-t0pR9dlWQNr4cFEg3ERpomTrnADXNpTzlxyDZcZwxQJGa0A9030PTOnybRvzho5VmkwoR2xuCIUyfdxAjM3iYQ==",
 }:
-
 stdenv.mkDerivation {
   pname = "aspire-cli";
-  version = "daily";
+  inherit version;
 
   src = fetchurl {
-    url = "https://aka.ms/dotnet/9/aspire/ga/daily/aspire-cli-linux-x64.tar.gz";
-    hash = "sha512-zMUT7Y2r0vtXGwdSBnCiibBTsk0BgwVSPu7IlBec34GWvn16AmuFvjxsQ02WIirGs7bO49GzrrQOPymwRkoJbw==";
+    url = "https://ci.dot.net/public/aspire/${version}/aspire-cli-linux-x64-${version}.tar.gz";
+    inherit hash;
   };
 
   nativeBuildInputs = [makeWrapper patchelf];
@@ -35,11 +37,11 @@ stdenv.mkDerivation {
 
     patchelf \
       --set-interpreter "${stdenv.cc.bintools.dynamicLinker}" \
-      --set-rpath "${lib.makeLibraryPath [glibc icu]}" \
+      --set-rpath "${lib.makeLibraryPath [glibc icu openssl]}" \
       "$out/libexec/aspire"
 
     makeWrapper "$out/libexec/aspire" "$out/bin/aspire" \
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [icu]}"
+      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [icu openssl]}"
 
     runHook postInstall
   '';

@@ -7,6 +7,7 @@ This is a Nix Flake for the [Aspire](https://aspire.dev) CLI tool.
 - [Usage](#usage)
 - [Use this flake in your project](#use-this-flake-in-your-project)
 - [Override the Aspire CLI version](#override-the-aspire-cli-version)
+- [Supported platforms](#supported-platforms)
 - [Notes](#notes)
 
 ## Usage
@@ -57,15 +58,15 @@ Then run `nix develop` and use `aspire`.
 
 ## Override the Aspire CLI version
 
-The package is parameterized by `version`, `url`, and `hash`.
+The package is parameterized by `version`, `fileVersion`, and `hash`.
 
 If you want to use a different Aspire CLI version, override these values:
 
 ```nix
 let
-  aspire = aspire-cli.packages.${system}.aspire-cli-stable.override {
+  aspire = aspire-cli.packages.${system}.aspire-cli.override {
     version = "<aspire-version>";
-    url = "<tarball-url>";
+    fileVersion = "<file-version>"; # defaults to version if omitted
     hash = "<nix-hash>";
   };
 in {
@@ -96,7 +97,13 @@ curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/dai
   | sed -n 's#^.*/public/aspire/\([^/]*\)/.*#\1#p'
 ```
 
+## Supported platforms
+
+- `x86_64-linux`
+- `aarch64-linux`
+- `x86_64-darwin`
+- `aarch64-darwin`
+
 ## Notes
 
-- Targets `x86_64-linux` (upstream tarball: `aspire-cli-linux-x64.tar.gz`).
 - Versions are updated weekly via GitHub Actions.

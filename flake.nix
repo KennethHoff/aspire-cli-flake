@@ -2,56 +2,48 @@
   description = "Nix flake for the .NET Aspire CLI";
 
   inputs = {
+    flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-  }: let
-    supportedSystems = ["x86_64-linux"];
+  outputs = inputs @ {flake-parts, ...}:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = [
+        "x86_64-linux"
+      ];
 
-    forAllSystems = f:
-      nixpkgs.lib.genAttrs supportedSystems (system: f system);
+      perSystem = {pkgs, ...}: let
+        versions = import ./versions.nix;
 
-    versions = import ./versions.nix;
-  in {
-    packages = forAllSystems (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
-      mkAspire = channel:
-        pkgs.callPackage ./package.nix {
-          inherit (versions.${channel}) version url hash;
+        mkAspire = channel:
+          pkgs.callPackage ./package.nix {
+            inherit (versions.${channel}) version url hash;
+          };
+
+        aspire = {
+          stable = mkAspire "stable";
+          staging = mkAspire "staging";
+          dev = mkAspire "dev";
         };
-    in {
-      aspire-cli-stable = mkAspire "stable";
-      aspire-cli-staging = mkAspire "staging";
-      aspire-cli-dev = mkAspire "dev";
-      aspire-cli = self.packages.${system}.aspire-cli-stable;
-      default = self.packages.${system}.aspire-cli;
-    });
+      in {
+        packages = {
+          aspire-cli-stable = aspire.stable;
+          aspire-cli-staging = aspire.staging;
+          aspire-cli-dev = aspire.dev;
+          aspire-cli = aspire.stable;
+          default = aspire.stable;
+        };
 
-    checks = forAllSystems (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
-    in
-      import ./tests {inherit pkgs self;});
+        apps.default = {
+          type = "app";
+          program = "${aspire.stable}/bin/aspire";
+        };
 
-    apps = forAllSystems (system: {
-      default = {
-        type = "app";
-        program = "${self.packages.${system}.default}/bin/aspire";
+        devShells.default = pkgs.mkShell {
+          packages = builtins.attrValues aspire;
+        };
+
+        formatter = pkgs.nixfmt;
       };
-    });
-
-    devShells = forAllSystems (system: {
-      default = nixpkgs.legacyPackages.${system}.mkShell {
-        packages = [
-          self.packages.${system}.aspire-cli-stable
-          self.packages.${system}.aspire-cli-staging
-          self.packages.${system}.aspire-cli-dev
-        ];
-      };
-    });
-
-    formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
-  };
+    };
 }

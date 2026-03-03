@@ -32,7 +32,10 @@ stdenv.mkDerivation {
     inherit hash;
   };
 
-  nativeBuildInputs = lib.optionals isLinux [makeWrapper patchelf];
+  nativeBuildInputs = lib.optionals isLinux [
+    makeWrapper
+    patchelf
+  ];
 
   dontConfigure = true;
   dontBuild = true;
@@ -51,11 +54,22 @@ stdenv.mkDerivation {
     ${lib.optionalString isLinux ''
       patchelf \
         --set-interpreter "${stdenv.cc.bintools.dynamicLinker}" \
-        --set-rpath "${lib.makeLibraryPath [glibc icu openssl]}" \
+        --set-rpath "${
+          lib.makeLibraryPath [
+            glibc
+            icu
+            openssl
+          ]
+        }" \
         "$out/libexec/aspire"
 
       makeWrapper "$out/libexec/aspire" "$out/bin/aspire" \
-        --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [icu openssl]}"
+        --prefix LD_LIBRARY_PATH : "${
+          lib.makeLibraryPath [
+            icu
+            openssl
+          ]
+        }"
     ''}
 
     ${lib.optionalString isDarwin ''
@@ -69,7 +83,7 @@ stdenv.mkDerivation {
   meta = {
     description = ".NET Aspire CLI";
     homepage = "https://learn.microsoft.com/dotnet/aspire/";
-    sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
+    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
     license = lib.licenses.mit;
     platforms = [
       "x86_64-linux"

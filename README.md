@@ -12,6 +12,14 @@ This is a Nix Flake for the [Aspire](https://aspire.dev) CLI tool.
 
 ## Usage
 
+Run directly from GitHub without cloning:
+
+```bash
+nix run github:kennethhoff/aspire-cli-flake#aspire-cli-stable
+nix run github:kennethhoff/aspire-cli-flake#aspire-cli-staging
+nix run github:kennethhoff/aspire-cli-flake#aspire-cli-dev
+```
+
 Run from this repo:
 
 ```bash

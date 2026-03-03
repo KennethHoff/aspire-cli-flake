@@ -13,11 +13,20 @@
 
     forAllSystems = f:
       nixpkgs.lib.genAttrs supportedSystems (system: f system);
+
+    versions = import ./versions.nix;
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
+      mkAspire = channel:
+        pkgs.callPackage ./package.nix {
+          inherit (versions.${channel}) version url hash;
+        };
     in {
-      aspire-cli = pkgs.callPackage ./package.nix {};
+      aspire-cli-stable = mkAspire "stable";
+      aspire-cli-staging = mkAspire "staging";
+      aspire-cli-dev = mkAspire "dev";
+      aspire-cli = self.packages.${system}.aspire-cli-stable;
       default = self.packages.${system}.aspire-cli;
     });
 
@@ -33,6 +42,16 @@
       };
     });
 
-    formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
+    devShells = forAllSystems (system: {
+      default = nixpkgs.legacyPackages.${system}.mkShell {
+        packages = [
+          self.packages.${system}.aspire-cli-stable
+          self.packages.${system}.aspire-cli-staging
+          self.packages.${system}.aspire-cli-dev
+        ];
+      };
+    });
+
+    formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
   };
 }

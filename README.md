@@ -46,6 +46,7 @@ Add this flake as an input and include the package in your dev shell.
     devShells.${system}.default = pkgs.mkShell {
       packages = [
         aspire-cli.packages.${system}.aspire-cli
+        # or: aspire-cli-stable, aspire-cli-staging, aspire-cli-dev
       ];
     };
   };
@@ -56,35 +57,15 @@ Then run `nix develop` and use `aspire`.
 
 ## Override the Aspire CLI version
 
-The package is parameterized by `version` and `hash` (the upstream tarball is fetched with `fetchurl`).
+The package is parameterized by `version`, `url`, and `hash`.
 
-If you want to use a different Aspire CLI version, override both values:
-
-Note: the version string includes a `-**` qualifier (for example `-preview...`), so be sure to use the full version from the upstream tarball URL.
-
-When bumping to a specific release, copy the version segment from the upstream tarball URL format:
-`https://ci.dot.net/public/aspire/<version>/aspire-cli-linux-x64-<version>.tar.gz`.
-
-The following URLs are moving channels. You can resolve the full version by following redirects and reading the final `Location` header (the final URL contains the full version string):
-
-```bash
-# stable (latest)
-curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/ga/daily/aspire-cli-linux-x64.tar.gz \
-  | sed -n 's#^.*/public/aspire/\([^/]*\)/.*#\1#p'
-
-# staging (rc)
-curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/rc/daily/aspire-cli-linux-x64.tar.gz \
-  | sed -n 's#^.*/public/aspire/\([^/]*\)/.*#\1#p'
-
-# dev (daily)
-curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/daily/aspire-cli-linux-x64.tar.gz \
-  | sed -n 's#^.*/public/aspire/\([^/]*\)/.*#\1#p'
-```
+If you want to use a different Aspire CLI version, override these values:
 
 ```nix
 let
-  aspire = aspire-cli.packages.${system}.aspire-cli.override {
+  aspire = aspire-cli.packages.${system}.aspire-cli-stable.override {
     version = "<aspire-version>";
+    url = "<tarball-url>";
     hash = "<nix-hash>";
   };
 in {
@@ -96,6 +77,26 @@ in {
 
 To get the correct `hash` for a new version, run a build once and copy the `got: ...` hash from the failure message.
 
+The version string includes a `-**` qualifier (for example `-preview...`), so be sure to use the full version from the upstream tarball URL:
+`https://ci.dot.net/public/aspire/<version>/aspire-cli-linux-x64-<version>.tar.gz`.
+
+You can resolve the latest version for each channel by following redirects:
+
+```bash
+# stable
+curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/ga/daily/aspire-cli-linux-x64.tar.gz \
+  | sed -n 's#^.*/public/aspire/\([^/]*\)/.*#\1#p'
+
+# staging
+curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/rc/daily/aspire-cli-linux-x64.tar.gz \
+  | sed -n 's#^.*/public/aspire/\([^/]*\)/.*#\1#p'
+
+# dev
+curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/daily/aspire-cli-linux-x64.tar.gz \
+  | sed -n 's#^.*/public/aspire/\([^/]*\)/.*#\1#p'
+```
+
 ## Notes
 
 - Targets `x86_64-linux` (upstream tarball: `aspire-cli-linux-x64.tar.gz`).
+- Versions are updated weekly via GitHub Actions.

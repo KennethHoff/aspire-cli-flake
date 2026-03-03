@@ -7,16 +7,16 @@
   openssl,
   makeWrapper,
   patchelf,
-  version ? "13.2.0-preview.1.26120.3",
-  hash ? "sha512-t0pR9dlWQNr4cFEg3ERpomTrnADXNpTzlxyDZcZwxQJGa0A9030PTOnybRvzho5VmkwoR2xuCIUyfdxAjM3iYQ==",
+  version,
+  url ? "https://ci.dot.net/public/aspire/${version}/aspire-cli-linux-x64-${version}.tar.gz",
+  hash,
 }:
 stdenv.mkDerivation {
   pname = "aspire-cli";
   inherit version;
 
   src = fetchurl {
-    url = "https://ci.dot.net/public/aspire/${version}/aspire-cli-linux-x64-${version}.tar.gz";
-    inherit hash;
+    inherit url hash;
   };
 
   nativeBuildInputs = [makeWrapper patchelf];

@@ -10,14 +10,20 @@
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = [
         "x86_64-linux"
+        "x86_64-darwin"
+        "aarch64-linux"
+        "aarch64-darwin"
       ];
 
-      perSystem = {pkgs, ...}: let
+      perSystem = {pkgs, system, ...}: let
         versions = import ./versions.nix;
 
         mkAspire = channel:
           pkgs.callPackage ./package.nix {
-            inherit (versions.${channel}) version url hash;
+            inherit system;
+            inherit (versions.${channel}) version;
+            inherit (versions.${channel}) fileVersion;
+            hash = versions.${channel}.hashes.${system};
           };
 
         aspire = {

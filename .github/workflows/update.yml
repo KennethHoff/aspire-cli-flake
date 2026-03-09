@@ -20,8 +20,116 @@ jobs:
 
       - uses: cachix/install-nix-action@v30
 
+      - name: Capture old versions
+        run: |
+          for channel in stable staging dev; do
+            channel_upper="${channel^^}"
+            version=$(sed -n "/^  ${channel} = {/,/^  };/{s/.*version = \"\([^\"]*\)\".*/\1/p;}" versions.nix)
+            echo "OLD_${channel_upper}=${version}" >> "$GITHUB_ENV"
+          done
+
       - name: Update all channels
         run: ./update.sh
+
+      - name: Generate job summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          declare -A OLD_VERSIONS=(
+            [stable]="$OLD_STABLE"
+            [staging]="$OLD_STAGING"
+            [dev]="$OLD_DEV"
+          )
+
+          {
+            echo "## Aspire CLI Version Update Summary"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for channel in stable staging dev; do
+            old_version="${OLD_VERSIONS[$channel]}"
+            new_version=$(sed -n "/^  $channel = {/,/^  };/{s/.*version = \"\([^\"]*\)\".*/\1/p;}" versions.nix)
+
+            {
+              echo "### Channel: \`$channel\`"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            if [[ "$old_version" == "$new_version" ]]; then
+              echo "No update. Current version: \`$new_version\`" >> "$GITHUB_STEP_SUMMARY"
+            else
+              {
+                echo "| | Version |"
+                echo "| --- | --- |"
+                echo "| **Old** | \`$old_version\` |"
+                echo "| **New** | \`$new_version\` |"
+                echo ""
+              } >> "$GITHUB_STEP_SUMMARY"
+
+              # Try to fetch release notes from dotnet/aspire
+              release_body=""
+              release_url=""
+              successful_new_tag=""
+              for tag in "v${new_version}" "${new_version}"; do
+                release_json=$(gh api "repos/dotnet/aspire/releases/tags/${tag}" 2>/dev/null || true)
+                if [[ -n "$release_json" ]] && echo "$release_json" | jq -e '.tag_name' > /dev/null 2>&1; then
+                  release_body=$(echo "$release_json" | jq -r '.body // ""')
+                  release_url=$(echo "$release_json" | jq -r '.html_url // ""')
+                  successful_new_tag="$tag"
+                  break
+                fi
+              done
+
+              if [[ -n "$release_body" || -n "$release_url" ]]; then
+                {
+                  echo "#### Release Notes"
+                  echo ""
+                  if [[ -n "$release_url" ]]; then
+                    echo "[View on GitHub]($release_url)"
+                    echo ""
+                  fi
+                  if [[ -n "$release_body" ]]; then
+                    echo "$release_body"
+                    echo ""
+                  fi
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+
+              # Try to get commit diff between old and new versions.
+              # Reuse the tag format that worked for the release notes lookup, falling
+              # back to the v-prefixed form if no release was found.
+              new_tag="${successful_new_tag:-v${new_version}}"
+              commits_md=""
+              compare_url=""
+              for old_tag in "v${old_version}" "${old_version}"; do
+                compare_json=$(gh api "repos/dotnet/aspire/compare/${old_tag}...${new_tag}" 2>/dev/null || true)
+                if [[ -n "$compare_json" ]] && echo "$compare_json" | jq -e '.commits' > /dev/null 2>&1; then
+                  compare_url=$(echo "$compare_json" | jq -r '.permalink_url // .html_url // ""')
+                  commits_md=$(echo "$compare_json" | jq -r \
+                    '.commits[] | "- [`\(.sha[0:7])`](\(.html_url)) \(.commit.message | split("\n")[0])"' \
+                    2>/dev/null || true)
+                  break
+                fi
+              done
+
+              if [[ -n "$commits_md" || -n "$compare_url" ]]; then
+                {
+                  echo "#### Commit Diff"
+                  echo ""
+                  if [[ -n "$compare_url" ]]; then
+                    echo "[View full diff on GitHub]($compare_url)"
+                    echo ""
+                  fi
+                  if [[ -n "$commits_md" ]]; then
+                    echo "$commits_md"
+                    echo ""
+                  fi
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+            fi
+
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Create PR if changed
         id: cpr

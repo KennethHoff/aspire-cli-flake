@@ -10,23 +10,23 @@
     };
   };
   staging = {
-    version = "13.2.0-preview.1.26159.1";
-    fileVersion = "13.2.0-preview.1.26159.1";
+    version = "13.2.0-preview.1.26165.3";
+    fileVersion = "13.2.0-preview.1.26165.3";
     hashes = {
-      x86_64-linux = "sha512-mKHnZFhZKQFqtF72EF80HIH32lR8X0VS1Rt5R8i/rvQfVPQPfTgGzo3aeh09Q/kO8FuVbyT6/W50bxhXq2ZtKw==";
-      aarch64-linux = "sha512-HU+qTA6btvST1L1FPBM6AYweFZRScGpybo2lAIt9WkW2DQSE6N+3GqOZLDQNSG/ExXZaa8o+IWsGM3GRomWNNg==";
-      x86_64-darwin = "sha512-Bmat3gdxqw/l/mFm6QFwnBgUpNzCGhliCwTJMgjHWaUljiGTw6UJgir4VF0IXSuVaYsDCxu+7X8Lb8EoWWXO5g==";
-      aarch64-darwin = "sha512-9XeugoNzHAIn232RncxcUWft3QzRVBcP+9LA4ShkIlV3cFgVrUGL0z41mBlwfvYVBxUci6ayirJKSqRVpAAR5g==";
+      x86_64-linux = "sha512-b8hd0U63FCdGq5IR+I5MZu5DYHjGu6KzfFc6yfbVCBskO4JkCaAmgc0+zJsDFDAc9Jd9tIQUs0TMna94gPZUsg==";
+      aarch64-linux = "sha512-7XDiY2wYjOz5lMXafY9BN3KUKtQS3RBkyn2cJ8KUAKleNiQRO5sG/Mho0pGA6BhQ2fSTCfcDv/C6O5RxcDR7LA==";
+      x86_64-darwin = "sha512-8ztEjEYeGBgz5BeAAwXJfr9yJKmfdjPI9te4HWGf9XC5hAVPzmIPpQBpQly0METOhOS803oqhsdTr/7iS6szZg==";
+      aarch64-darwin = "sha512-m12xkNllPbIyhJ2LOWrfPxcHcJtJ88VLzT/VoVx4lIQWpZco5MDwkQcwn8Wctx5F+ttXpSbDFp03XXjCLBmwcw==";
     };
   };
   dev = {
-    version = "13.3.0-preview.1.26156.8";
-    fileVersion = "13.3.0-preview.1.26156.8";
+    version = "13.3.0-preview.1.26163.4";
+    fileVersion = "13.3.0-preview.1.26163.4";
     hashes = {
-      x86_64-linux = "sha512-W3YNurBJgBl9CJ7I6D/lWHZF4gBqcwBuK6ZuEJn6OrQXAhmXlnqw1mrlR2p0PnmEf20AWLT+k/1LPdvq/nWo0g==";
-      aarch64-linux = "sha512-vIwS068tOqHyAfqLSetMEGmCVF/o2vFLZehsLysCnx2lF/VialTNRmKpHvgTOHJHliQadm2n/62AcuWTENGh+g==";
-      x86_64-darwin = "sha512-wpIsvqMDkLlbOmWQorSc9bNJQohgpBop4V0ZDfDi+LnJdjyrvTMolp+PP/PLJFRaz4Eom3ugIfMOHdOgevSuGg==";
-      aarch64-darwin = "sha512-BzHDQNGnp8veauW9vjmmQ6qQ6QbNemI8iqe4Q+k5s0YkOMgh7sOt86JzO/BRu7YW8kMOyxOYt0DGbeJWBQRDGQ==";
+      x86_64-linux = "sha512-mG5F2F59Rn+0WGbFzeX3zvIicYraDlscO/C6dupIr9qd7zhfwTxQxWFh+bcIZtQCJtBVdjvofjXYH1K6jKYO3w==";
+      aarch64-linux = "sha512-hoqi3+Q8rsxWHTRXvS0LjFb9CRc75oKIiUFVs+zHTTavugjGFKWFK2/pO2CubEM9mPsKHaHGM2jCanr4HMtMJw==";
+      x86_64-darwin = "sha512-yGBgYFOGgFTtqKAmqrh0FsGAen8kU7zUMzuBcH6b2ZmJ1ZpfdFfHtN7wDnMpp+5LJH3XWSsQAvV6qDHL9+HFJA==";
+      aarch64-darwin = "sha512-/0mfPqs9Xn5yAT8vFdIzyzUz7z8o7IVkhqTYmAcClydQpOcoiI/COT/nBE2azxpzX9BRJX32OeHp7wRX9RQrUw==";
     };
   };
 }

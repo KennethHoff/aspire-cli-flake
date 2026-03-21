@@ -6,7 +6,7 @@
   };
 
   outputs =
-    { nixpkgs, ... }:
+    { self, nixpkgs, ... }:
     let
       systems = [
         "x86_64-linux"
@@ -96,6 +96,13 @@
               (mkAspire "dev")
             ];
           };
+        }
+      );
+
+      checks = forAllSystems (
+        { pkgs, ... }:
+        import ./tests/default.nix {
+          inherit pkgs self;
         }
       );
 

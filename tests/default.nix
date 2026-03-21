@@ -63,4 +63,27 @@ in {
 
       mkdir -p "$out"
     '';
+
+  stagingBundleRuntimePath =
+    pkgs.runCommand "aspire-cli-staging-runtime-path-test" {
+      nativeBuildInputs = [pkgs.coreutils pkgs.gnugrep];
+      staging = packages.aspire-cli-staging;
+    } ''
+      set -euo pipefail
+
+      export HOME="$PWD/home"
+      rm -rf "$HOME"
+      mkdir -p "$HOME"
+
+      "$staging/bin/aspire" update --debug --non-interactive >stdout 2>stderr || true
+
+      grep -q "$HOME/.local/state/aspire-cli" stderr
+      grep -q ".aspire-bundle-lock" stderr
+      if grep -q "/nix/store/.*\.aspire-bundle-lock" stderr; then
+        echo "bundle lock unexpectedly used /nix/store" >&2
+        exit 1
+      fi
+
+      mkdir -p "$out"
+    '';
 }

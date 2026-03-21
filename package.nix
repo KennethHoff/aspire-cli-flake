@@ -3,11 +3,12 @@
   stdenv,
   system,
   fetchurl,
+  coreutils,
   glibc,
   icu,
   openssl,
-  makeWrapper,
   patchelf,
+  runtimeShell,
   version,
   fileVersion ? version,
   hash,
@@ -32,10 +33,7 @@ stdenv.mkDerivation {
     inherit hash;
   };
 
-  nativeBuildInputs = lib.optionals isLinux [
-    makeWrapper
-    patchelf
-  ];
+  nativeBuildInputs = lib.optionals isLinux [ patchelf ];
 
   dontConfigure = true;
   dontBuild = true;
@@ -62,20 +60,31 @@ stdenv.mkDerivation {
           ]
         }" \
         "$out/libexec/aspire"
-
-      makeWrapper "$out/libexec/aspire" "$out/bin/aspire" \
-        --prefix LD_LIBRARY_PATH : "${
-          lib.makeLibraryPath [
-            icu
-            openssl
-          ]
-        }"
     ''}
 
-    ${lib.optionalString isDarwin ''
-      mkdir -p "$out/bin"
-      ln -s "$out/libexec/aspire" "$out/bin/aspire"
+    mkdir -p "$out/bin"
+    wrapper="$out/bin/aspire"
+    printf '%s\n' '#!${runtimeShell}' > "$wrapper"
+    printf '%s\n' 'set -euo pipefail' >> "$wrapper"
+    printf '%s\n' 'state_home="''${XDG_STATE_HOME:-$HOME/.local/state}"' >> "$wrapper"
+    printf '%s\n' 'runtime_root="$state_home/aspire-cli/${version}"' >> "$wrapper"
+    printf '%s\n' 'runtime_bin="$runtime_root/bin"' >> "$wrapper"
+    printf '%s\n' 'runtime_aspire="$runtime_bin/aspire"' >> "$wrapper"
+    printf '%s\n' '${coreutils}/bin/mkdir -p "$runtime_bin"' >> "$wrapper"
+    printf '%s\n' 'if [ ! -x "$runtime_aspire" ]; then' >> "$wrapper"
+    printf '%s\n' '  ${coreutils}/bin/cp "${placeholder "out"}/libexec/aspire" "$runtime_aspire"' >> "$wrapper"
+    printf '%s\n' '  ${coreutils}/bin/chmod 755 "$runtime_aspire"' >> "$wrapper"
+    printf '%s\n' 'fi' >> "$wrapper"
+    ${lib.optionalString isLinux ''
+      printf '%s\n' 'export LD_LIBRARY_PATH="${
+        lib.makeLibraryPath [
+          icu
+          openssl
+        ]
+      }''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"' >> "$wrapper"
     ''}
+    printf '%s\n' 'exec "$runtime_aspire" "$@"' >> "$wrapper"
+    chmod +x "$out/bin/aspire"
 
     runHook postInstall
   '';

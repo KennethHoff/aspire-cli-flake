@@ -30,6 +30,15 @@ jobs:
           echo "old_staging=$(sed -n '/^  staging = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
           echo "old_dev=$(sed -n '/^  dev = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
 
+      - name: Summary
+        run: |
+          echo "## Check Updates"
+          echo ""
+          echo "Current versions:"
+          echo "- stable: ${{ steps.current.outputs.old_stable }}"
+          echo "- staging: ${{ steps.current.outputs.old_staging }}"
+          echo "- dev: ${{ steps.current.outputs.old_dev }}"
+
   update-channels:
     needs: check-updates
     runs-on: ubuntu-latest
@@ -71,6 +80,19 @@ jobs:
       - name: Restore versions if no changes
         if: steps.check.outputs.has_changes != 'true'
         run: git checkout versions.nix
+
+      - name: Summary
+        run: |
+          echo "## Update Channels"
+          echo ""
+          if [[ "${{ steps.check.outputs.has_changes }}" == "true" ]]; then
+            echo "Updates available:"
+            echo "- stable: ${{ needs.check-updates.outputs.old_stable }} → ${{ steps.new.outputs.stable }}"
+            echo "- staging: ${{ needs.check-updates.outputs.old_staging }} → ${{ steps.new.outputs.staging }}"
+            echo "- dev: ${{ needs.check-updates.outputs.old_dev }} → ${{ steps.new.outputs.dev }}"
+          else
+            echo "No updates available. All channels already at latest version."
+          fi
 
   generate-summary:
     needs: [check-updates, update-channels]
@@ -205,6 +227,12 @@ jobs:
           branch: auto-update-aspire-cli
           delete-branch: true
 
+      - name: Summary
+        run: |
+          echo "## Create PR"
+          echo ""
+          echo "Pull request #${{ steps.cpr.outputs.pull-request-number }} created successfully."
+
   enable-auto-merge:
     needs: create-pr
     runs-on: ubuntu-latest
@@ -214,3 +242,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ needs.create-pr.outputs.pr_number }}
+
+      - name: Summary
+        run: |
+          echo "## Enable Auto-Merge"
+          echo ""
+          echo "Auto-merge enabled on PR #$PR_NUMBER."

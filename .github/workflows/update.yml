@@ -161,3 +161,28 @@ jobs:
           echo "## Enable Auto-Merge"
           echo ""
           echo "Auto-merge enabled on PR #$PR_NUMBER."
+
+  generate-summary:
+    name: Generate summary
+    runs-on: ubuntu-latest
+    needs: [detect, update, create-pull-request, enable-auto-merge]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Workflow Summary"
+          echo ""
+          echo "### Detect"
+          echo "Current versions:"
+          echo "- stable: ${{ needs.detect.outputs.old_stable }}"
+          echo "- staging: ${{ needs.detect.outputs.old_staging }}"
+          echo "- dev: ${{ needs.detect.outputs.old_dev }}"
+          echo ""
+          echo "### Update"
+          echo "Has changes: ${{ needs.update.outputs.has_changes }}"
+          echo "Stable: ${{ needs.update.outputs.stable }}"
+          echo "Staging: ${{ needs.update.outputs.staging }}"
+          echo "Dev: ${{ needs.update.outputs.dev }}"
+          echo ""
+          echo "### Pull Request"
+          echo "PR number: ${{ needs.create-pull-request.outputs.pr_number }}"

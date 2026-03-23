@@ -10,7 +10,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  check-updates:
+  detect:
+    name: Detect current versions
     runs-on: ubuntu-latest
     outputs:
       old_stable: ${{ steps.current.outputs.old_stable }}
@@ -32,15 +33,16 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Check Updates"
+          echo "## Detect"
           echo ""
           echo "Current versions:"
           echo "- stable: ${{ steps.current.outputs.old_stable }}"
           echo "- staging: ${{ steps.current.outputs.old_staging }}"
           echo "- dev: ${{ steps.current.outputs.old_dev }}"
 
-  update-channels:
-    needs: check-updates
+  update:
+    name: Fetch latest versions
+    needs: detect
     runs-on: ubuntu-latest
     outputs:
       has_changes: ${{ steps.check.outputs.has_changes }}
@@ -68,11 +70,11 @@ jobs:
         id: check
         run: |
           has_changes=false
-          if [[ "${{ needs.check-updates.outputs.old_stable }}" != "${{ steps.new.outputs.stable }}" ]]; then
+          if [[ "${{ needs.detect.outputs.old_stable }}" != "${{ steps.new.outputs.stable }}" ]]; then
             has_changes=true
-          elif [[ "${{ needs.check-updates.outputs.old_staging }}" != "${{ steps.new.outputs.staging }}" ]]; then
+          elif [[ "${{ needs.detect.outputs.old_staging }}" != "${{ steps.new.outputs.staging }}" ]]; then
             has_changes=true
-          elif [[ "${{ needs.check-updates.outputs.old_dev }}" != "${{ steps.new.outputs.dev }}" ]]; then
+          elif [[ "${{ needs.detect.outputs.old_dev }}" != "${{ steps.new.outputs.dev }}" ]]; then
             has_changes=true
           fi
           echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
@@ -87,16 +89,17 @@ jobs:
           echo ""
           if [[ "${{ steps.check.outputs.has_changes }}" == "true" ]]; then
             echo "Updates available:"
-            echo "- stable: ${{ needs.check-updates.outputs.old_stable }} → ${{ steps.new.outputs.stable }}"
-            echo "- staging: ${{ needs.check-updates.outputs.old_staging }} → ${{ steps.new.outputs.staging }}"
-            echo "- dev: ${{ needs.check-updates.outputs.old_dev }} → ${{ steps.new.outputs.dev }}"
+            echo "- stable: ${{ needs.detect.outputs.old_stable }} → ${{ steps.new.outputs.stable }}"
+            echo "- staging: ${{ needs.detect.outputs.old_staging }} → ${{ steps.new.outputs.staging }}"
+            echo "- dev: ${{ needs.detect.outputs.old_dev }} → ${{ steps.new.outputs.dev }}"
           else
             echo "No updates available. All channels already at latest version."
           fi
 
-  create-pr:
-    needs: [check-updates, update-channels]
-    if: needs.update-channels.outputs.has_changes == 'true'
+  create-pull-request:
+    name: Create pull request
+    needs: [detect, update]
+    if: needs.update.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -126,14 +129,15 @@ jobs:
           echo "Pull request #${{ steps.cpr.outputs.pull-request-number }} created successfully."
 
   enable-auto-merge:
-    needs: create-pr
+    name: Enable auto-merge
+    needs: create-pull-request
     runs-on: ubuntu-latest
     steps:
       - name: Enable auto-merge
         run: gh pr merge --auto --squash "$PR_NUMBER"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ needs.create-pr.outputs.pr_number }}
+          PR_NUMBER: ${{ needs.create-pull-request.outputs.pr_number }}
 
       - name: Summary
         run: |

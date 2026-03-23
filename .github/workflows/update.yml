@@ -79,6 +79,13 @@ jobs:
           fi
           echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
 
+      - name: Upload updated versions
+        if: steps.check-changes.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-versions
+          path: versions.nix
+
       - name: Restore versions if no changes
         if: steps.check-changes.outputs.has_changes != 'true'
         run: git checkout versions.nix
@@ -111,6 +118,11 @@ jobs:
         with:
           ref: master
 
+      - name: Download updated versions
+        uses: actions/download-artifact@v4
+        with:
+          name: updated-versions
+
       - name: Create PR
         id: create-pull-request
         uses: peter-evans/create-pull-request@v7
@@ -131,6 +143,7 @@ jobs:
   enable-auto-merge:
     name: Enable auto-merge
     needs: create-pull-request
+    if: needs.create-pull-request.outputs.pr_number != ''
     runs-on: ubuntu-latest
     steps:
       - name: Enable auto-merge

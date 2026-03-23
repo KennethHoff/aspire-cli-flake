@@ -154,4 +154,4 @@ jobs:
 
       - name: Summary
         run: |
-          echo "✅ Auto-merge enabled on PR #$PR_NUMBER." >> $GITHUB_STEP_SUMMARY
+          echo "✅ Auto-merge enabled on PR #${{ needs.create-pull-request.outputs.pr_number }}." >> $GITHUB_STEP_SUMMARY

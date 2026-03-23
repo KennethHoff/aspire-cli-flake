@@ -33,12 +33,13 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Detect"
-          echo ""
-          echo "Current versions:"
-          echo "- stable: ${{ steps.get-versions.outputs.old_stable }}"
-          echo "- staging: ${{ steps.get-versions.outputs.old_staging }}"
-          echo "- dev: ${{ steps.get-versions.outputs.old_dev }}"
+          echo "## Detect Current Versions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Channel | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| stable | \`${{ steps.get-versions.outputs.old_stable }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| staging | \`${{ steps.get-versions.outputs.old_staging }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| dev | \`${{ steps.get-versions.outputs.old_dev }}\` |" >> $GITHUB_STEP_SUMMARY
 
   update:
     name: Fetch latest versions
@@ -92,15 +93,16 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Update Channels"
-          echo ""
+          echo "## Update Channels" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ steps.check-changes.outputs.has_changes }}" == "true" ]]; then
-            echo "Updates available:"
-            echo "- stable: ${{ needs.detect.outputs.old_stable }} → ${{ steps.get-versions.outputs.stable }}"
-            echo "- staging: ${{ needs.detect.outputs.old_staging }} → ${{ steps.get-versions.outputs.staging }}"
-            echo "- dev: ${{ needs.detect.outputs.old_dev }} → ${{ steps.get-versions.outputs.dev }}"
+            echo "| Channel | Old | New |" >> $GITHUB_STEP_SUMMARY
+            echo "|---------|-----|-----|" >> $GITHUB_STEP_SUMMARY
+            echo "| stable | \`${{ needs.detect.outputs.old_stable }}\` | \`${{ steps.get-versions.outputs.stable }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| staging | \`${{ needs.detect.outputs.old_staging }}\` | \`${{ steps.get-versions.outputs.staging }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| dev | \`${{ needs.detect.outputs.old_dev }}\` | \`${{ steps.get-versions.outputs.dev }}\` |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "No updates available. All channels already at latest version."
+            echo "✅ No updates available. All channels already at latest version." >> $GITHUB_STEP_SUMMARY
           fi
 
   create-pull-request:
@@ -136,9 +138,9 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Create Pull Request"
-          echo ""
-          echo "Pull request #${{ steps.create-pull-request.outputs.pull-request-number }} created successfully."
+          echo "## Create Pull Request" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ PR #[${{ steps.create-pull-request.outputs.pull-request-number }}](https://github.com/KennethHoff/aspire-cli-flake/pull/${{ steps.create-pull-request.outputs.pull-request-number }}) created successfully." >> $GITHUB_STEP_SUMMARY
 
   enable-auto-merge:
     name: Enable auto-merge
@@ -158,31 +160,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Enable Auto-Merge"
-          echo ""
-          echo "Auto-merge enabled on PR #$PR_NUMBER."
-
-  generate-summary:
-    name: Generate summary
-    runs-on: ubuntu-latest
-    needs: [detect, update, create-pull-request, enable-auto-merge]
-    if: always()
-    steps:
-      - name: Summary
-        run: |
-          echo "## Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Enable Auto-Merge" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Detect" >> $GITHUB_STEP_SUMMARY
-          echo "Current versions:" >> $GITHUB_STEP_SUMMARY
-          echo "- stable: ${{ needs.detect.outputs.old_stable }}" >> $GITHUB_STEP_SUMMARY
-          echo "- staging: ${{ needs.detect.outputs.old_staging }}" >> $GITHUB_STEP_SUMMARY
-          echo "- dev: ${{ needs.detect.outputs.old_dev }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Update" >> $GITHUB_STEP_SUMMARY
-          echo "Has changes: ${{ needs.update.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
-          echo "Stable: ${{ needs.update.outputs.stable }}" >> $GITHUB_STEP_SUMMARY
-          echo "Staging: ${{ needs.update.outputs.staging }}" >> $GITHUB_STEP_SUMMARY
-          echo "Dev: ${{ needs.update.outputs.dev }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pull Request" >> $GITHUB_STEP_SUMMARY
-          echo "PR number: ${{ needs.create-pull-request.outputs.pr_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Auto-merge enabled on PR #$PR_NUMBER." >> $GITHUB_STEP_SUMMARY

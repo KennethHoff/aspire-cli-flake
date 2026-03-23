@@ -33,8 +33,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Detect Current Versions" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Channel | Version |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
           echo "| stable | \`${{ steps.get-versions.outputs.old_stable }}\` |" >> $GITHUB_STEP_SUMMARY
@@ -93,8 +91,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Update Channels" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ steps.check-changes.outputs.has_changes }}" == "true" ]]; then
             echo "| Channel | Old | New |" >> $GITHUB_STEP_SUMMARY
             echo "|---------|-----|-----|" >> $GITHUB_STEP_SUMMARY
@@ -138,8 +134,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Create Pull Request" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ PR #[${{ steps.create-pull-request.outputs.pull-request-number }}](https://github.com/KennethHoff/aspire-cli-flake/pull/${{ steps.create-pull-request.outputs.pull-request-number }}) created successfully." >> $GITHUB_STEP_SUMMARY
 
   enable-auto-merge:
@@ -160,6 +154,4 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Enable Auto-Merge" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Auto-merge enabled on PR #$PR_NUMBER." >> $GITHUB_STEP_SUMMARY

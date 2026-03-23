@@ -14,9 +14,9 @@ jobs:
     name: Detect current versions
     runs-on: ubuntu-latest
     outputs:
-      old_stable: ${{ steps.current.outputs.old_stable }}
-      old_staging: ${{ steps.current.outputs.old_staging }}
-      old_dev: ${{ steps.current.outputs.old_dev }}
+      old_stable: ${{ steps.get-versions.outputs.old_stable }}
+      old_staging: ${{ steps.get-versions.outputs.old_staging }}
+      old_dev: ${{ steps.get-versions.outputs.old_dev }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,7 +25,7 @@ jobs:
       - uses: cachix/install-nix-action@v30
 
       - name: Get current versions
-        id: current
+        id: get-versions
         run: |
           echo "old_stable=$(sed -n '/^  stable = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
           echo "old_staging=$(sed -n '/^  staging = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
@@ -36,19 +36,19 @@ jobs:
           echo "## Detect"
           echo ""
           echo "Current versions:"
-          echo "- stable: ${{ steps.current.outputs.old_stable }}"
-          echo "- staging: ${{ steps.current.outputs.old_staging }}"
-          echo "- dev: ${{ steps.current.outputs.old_dev }}"
+          echo "- stable: ${{ steps.get-versions.outputs.old_stable }}"
+          echo "- staging: ${{ steps.get-versions.outputs.old_staging }}"
+          echo "- dev: ${{ steps.get-versions.outputs.old_dev }}"
 
   update:
     name: Fetch latest versions
     needs: detect
     runs-on: ubuntu-latest
     outputs:
-      has_changes: ${{ steps.check.outputs.has_changes }}
-      stable: ${{ steps.new.outputs.stable }}
-      staging: ${{ steps.new.outputs.staging }}
-      dev: ${{ steps.new.outputs.dev }}
+      has_changes: ${{ steps.check-changes.outputs.has_changes }}
+      stable: ${{ steps.get-versions.outputs.stable }}
+      staging: ${{ steps.get-versions.outputs.staging }}
+      dev: ${{ steps.get-versions.outputs.dev }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,38 +60,38 @@ jobs:
         run: ./update.sh
 
       - name: Get new versions
-        id: new
+        id: get-versions
         run: |
           echo "stable=$(sed -n '/^  stable = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
           echo "staging=$(sed -n '/^  staging = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
           echo "dev=$(sed -n '/^  dev = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
 
       - name: Check for changes
-        id: check
+        id: check-changes
         run: |
           has_changes=false
-          if [[ "${{ needs.detect.outputs.old_stable }}" != "${{ steps.new.outputs.stable }}" ]]; then
+          if [[ "${{ needs.detect.outputs.old_stable }}" != "${{ steps.get-versions.outputs.stable }}" ]]; then
             has_changes=true
-          elif [[ "${{ needs.detect.outputs.old_staging }}" != "${{ steps.new.outputs.staging }}" ]]; then
+          elif [[ "${{ needs.detect.outputs.old_staging }}" != "${{ steps.get-versions.outputs.staging }}" ]]; then
             has_changes=true
-          elif [[ "${{ needs.detect.outputs.old_dev }}" != "${{ steps.new.outputs.dev }}" ]]; then
+          elif [[ "${{ needs.detect.outputs.old_dev }}" != "${{ steps.get-versions.outputs.dev }}" ]]; then
             has_changes=true
           fi
           echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
 
       - name: Restore versions if no changes
-        if: steps.check.outputs.has_changes != 'true'
+        if: steps.check-changes.outputs.has_changes != 'true'
         run: git checkout versions.nix
 
       - name: Summary
         run: |
           echo "## Update Channels"
           echo ""
-          if [[ "${{ steps.check.outputs.has_changes }}" == "true" ]]; then
+          if [[ "${{ steps.check-changes.outputs.has_changes }}" == "true" ]]; then
             echo "Updates available:"
-            echo "- stable: ${{ needs.detect.outputs.old_stable }} → ${{ steps.new.outputs.stable }}"
-            echo "- staging: ${{ needs.detect.outputs.old_staging }} → ${{ steps.new.outputs.staging }}"
-            echo "- dev: ${{ needs.detect.outputs.old_dev }} → ${{ steps.new.outputs.dev }}"
+            echo "- stable: ${{ needs.detect.outputs.old_stable }} → ${{ steps.get-versions.outputs.stable }}"
+            echo "- staging: ${{ needs.detect.outputs.old_staging }} → ${{ steps.get-versions.outputs.staging }}"
+            echo "- dev: ${{ needs.detect.outputs.old_dev }} → ${{ steps.get-versions.outputs.dev }}"
           else
             echo "No updates available. All channels already at latest version."
           fi
@@ -105,14 +105,14 @@ jobs:
       contents: write
       pull-requests: write
     outputs:
-      pr_number: ${{ steps.cpr.outputs.pull-request-number }}
+      pr_number: ${{ steps.create-pull-request.outputs.pull-request-number }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: master
 
       - name: Create PR
-        id: cpr
+        id: create-pull-request
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "chore: update Aspire CLI versions"
@@ -124,9 +124,9 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Create PR"
+          echo "## Create Pull Request"
           echo ""
-          echo "Pull request #${{ steps.cpr.outputs.pull-request-number }} created successfully."
+          echo "Pull request #${{ steps.create-pull-request.outputs.pull-request-number }} created successfully."
 
   enable-auto-merge:
     name: Enable auto-merge

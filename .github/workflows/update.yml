@@ -33,11 +33,11 @@ jobs:
 
       - name: Summary
         run: |
-          echo "| Channel | Version |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| stable | \`${{ steps.get-versions.outputs.old_stable }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| staging | \`${{ steps.get-versions.outputs.old_staging }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| dev | \`${{ steps.get-versions.outputs.old_dev }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Channel | Version | Download |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| stable | \`${{ steps.get-versions.outputs.old_stable }}\` | [link](https://aka.ms/dotnet/9/aspire/ga/daily/aspire-cli-linux-x64.tar.gz) |" >> $GITHUB_STEP_SUMMARY
+          echo "| staging | \`${{ steps.get-versions.outputs.old_staging }}\` | [link](https://aka.ms/dotnet/9/aspire/rc/daily/aspire-cli-linux-x64.tar.gz) |" >> $GITHUB_STEP_SUMMARY
+          echo "| dev | \`${{ steps.get-versions.outputs.old_dev }}\` | [link](https://aka.ms/dotnet/9/aspire/daily/aspire-cli-linux-x64.tar.gz) |" >> $GITHUB_STEP_SUMMARY
 
   update:
     name: Fetch latest versions
@@ -48,6 +48,9 @@ jobs:
       stable: ${{ steps.get-versions.outputs.stable }}
       staging: ${{ steps.get-versions.outputs.staging }}
       dev: ${{ steps.get-versions.outputs.dev }}
+      stable_url: ${{ steps.get-versions.outputs.stable_url }}
+      staging_url: ${{ steps.get-versions.outputs.staging_url }}
+      dev_url: ${{ steps.get-versions.outputs.dev_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,6 +67,10 @@ jobs:
           echo "stable=$(sed -n '/^  stable = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
           echo "staging=$(sed -n '/^  staging = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
           echo "dev=$(sed -n '/^  dev = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
+
+          echo "stable_url=https://aka.ms/dotnet/9/aspire/ga/daily/aspire-cli-linux-x64.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "staging_url=https://aka.ms/dotnet/9/aspire/rc/daily/aspire-cli-linux-x64.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "dev_url=https://aka.ms/dotnet/9/aspire/daily/aspire-cli-linux-x64.tar.gz" >> "$GITHUB_OUTPUT"
 
       - name: Check for changes
         id: check-changes
@@ -92,11 +99,11 @@ jobs:
       - name: Summary
         run: |
           if [[ "${{ steps.check-changes.outputs.has_changes }}" == "true" ]]; then
-            echo "| Channel | Old | New |" >> $GITHUB_STEP_SUMMARY
-            echo "|---------|-----|-----|" >> $GITHUB_STEP_SUMMARY
-            echo "| stable | \`${{ needs.detect.outputs.old_stable }}\` | \`${{ steps.get-versions.outputs.stable }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| staging | \`${{ needs.detect.outputs.old_staging }}\` | \`${{ steps.get-versions.outputs.staging }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| dev | \`${{ needs.detect.outputs.old_dev }}\` | \`${{ steps.get-versions.outputs.dev }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Channel | Old | New | Download |" >> $GITHUB_STEP_SUMMARY
+            echo "|---------|-----|-----|----------|" >> $GITHUB_STEP_SUMMARY
+            echo "| stable | \`${{ needs.detect.outputs.old_stable }}\` | \`${{ steps.get-versions.outputs.stable }}\` | [link](${{ steps.get-versions.outputs.stable_url }}) |" >> $GITHUB_STEP_SUMMARY
+            echo "| staging | \`${{ needs.detect.outputs.old_staging }}\` | \`${{ steps.get-versions.outputs.staging }}\` | [link](${{ steps.get-versions.outputs.staging_url }}) |" >> $GITHUB_STEP_SUMMARY
+            echo "| dev | \`${{ needs.detect.outputs.old_dev }}\` | \`${{ steps.get-versions.outputs.dev }}\` | [link](${{ steps.get-versions.outputs.dev_url }}) |" >> $GITHUB_STEP_SUMMARY
           else
             echo "✅ No updates available. All channels already at latest version." >> $GITHUB_STEP_SUMMARY
           fi

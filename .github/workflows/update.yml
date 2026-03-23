@@ -146,6 +146,10 @@ jobs:
     if: needs.create-pull-request.outputs.pr_number != ''
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
       - name: Enable auto-merge
         run: gh pr merge --auto --squash "$PR_NUMBER"
         env:

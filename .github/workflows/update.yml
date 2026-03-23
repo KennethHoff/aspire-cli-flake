@@ -10,9 +10,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  update:
+  check-updates:
     runs-on: ubuntu-latest
-
+    outputs:
+      old_stable: ${{ steps.current.outputs.old_stable }}
+      old_staging: ${{ steps.current.outputs.old_staging }}
+      old_dev: ${{ steps.current.outputs.old_dev }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,20 +23,70 @@ jobs:
 
       - uses: cachix/install-nix-action@v30
 
-      - name: Capture old versions
+      - name: Get current versions
+        id: current
         run: |
-          for channel in stable staging dev; do
-            channel_upper="${channel^^}"
-            version=$(sed -n "/^  ${channel} = {/,/^  };/{s/.*version = \"\([^\"]*\)\".*/\1/p;}" versions.nix)
-            echo "OLD_${channel_upper}=${version}" >> "$GITHUB_ENV"
-          done
+          echo "old_stable=$(sed -n '/^  stable = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
+          echo "old_staging=$(sed -n '/^  staging = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
+          echo "old_dev=$(sed -n '/^  dev = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
+
+  update-channels:
+    needs: check-updates
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.check.outputs.has_changes }}
+      stable: ${{ steps.new.outputs.stable }}
+      staging: ${{ steps.new.outputs.staging }}
+      dev: ${{ steps.new.outputs.dev }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - uses: cachix/install-nix-action@v30
 
       - name: Update all channels
         run: ./update.sh
 
+      - name: Get new versions
+        id: new
+        run: |
+          echo "stable=$(sed -n '/^  stable = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
+          echo "staging=$(sed -n '/^  staging = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
+          echo "dev=$(sed -n '/^  dev = {/,/^  };/{s/.*version = "\([^"]*\)".*/\1/p;}' versions.nix)" >> "$GITHUB_OUTPUT"
+
+      - name: Check for changes
+        id: check
+        run: |
+          has_changes=false
+          if [[ "${{ needs.check-updates.outputs.old_stable }}" != "${{ steps.new.outputs.stable }}" ]]; then
+            has_changes=true
+          elif [[ "${{ needs.check-updates.outputs.old_staging }}" != "${{ steps.new.outputs.staging }}" ]]; then
+            has_changes=true
+          elif [[ "${{ needs.check-updates.outputs.old_dev }}" != "${{ steps.new.outputs.dev }}" ]]; then
+            has_changes=true
+          fi
+          echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
+
+      - name: Restore versions if no changes
+        if: steps.check.outputs.has_changes != 'true'
+        run: git checkout versions.nix
+
+  generate-summary:
+    needs: [check-updates, update-channels]
+    if: needs.update-channels.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
       - name: Generate job summary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OLD_STABLE: ${{ needs.check-updates.outputs.old_stable }}
+          OLD_STAGING: ${{ needs.check-updates.outputs.old_staging }}
+          OLD_DEV: ${{ needs.check-updates.outputs.old_dev }}
         run: |
           declare -A OLD_VERSIONS=(
             [stable]="$OLD_STABLE"
@@ -66,7 +119,6 @@ jobs:
                 echo ""
               } >> "$GITHUB_STEP_SUMMARY"
 
-              # Try to fetch release notes from dotnet/aspire
               release_body=""
               release_url=""
               successful_new_tag=""
@@ -95,9 +147,6 @@ jobs:
                 } >> "$GITHUB_STEP_SUMMARY"
               fi
 
-              # Try to get commit diff between old and new versions.
-              # Reuse the tag format that worked for the release notes lookup, falling
-              # back to the v-prefixed form if no release was found.
               new_tag="${successful_new_tag:-v${new_version}}"
               commits_md=""
               compare_url=""
@@ -131,7 +180,21 @@ jobs:
             echo "" >> "$GITHUB_STEP_SUMMARY"
           done
 
-      - name: Create PR if changed
+  create-pr:
+    needs: [check-updates, update-channels]
+    if: needs.update-channels.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      pr_number: ${{ steps.cpr.outputs.pull-request-number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Create PR
         id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
@@ -142,9 +205,12 @@ jobs:
           branch: auto-update-aspire-cli
           delete-branch: true
 
+  enable-auto-merge:
+    needs: create-pr
+    runs-on: ubuntu-latest
+    steps:
       - name: Enable auto-merge
-        if: steps.cpr.outputs.pull-request-number != ''
         run: gh pr merge --auto --squash "$PR_NUMBER"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
+          PR_NUMBER: ${{ needs.create-pr.outputs.pr_number }}

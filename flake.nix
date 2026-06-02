@@ -44,9 +44,16 @@
       # input and overlay. If still broken, narrow the OpenSSL change (diff
       # 3.6.1..3.6.2 CHANGES.md) and file an upstream issue. Don't let this pin
       # rot — it freezes the CLI's OpenSSL and misses its security updates.
-      opensslOverlay = final: prev: {
-        openssl = nixpkgs-openssl.legacyPackages.${prev.stdenv.hostPlatform.system}.openssl;
-      };
+      #
+      # Linux-only: applying this overlay on Darwin injects an openssl built by
+      # a different nixpkgs's bootstrap compiler into the Darwin stdenv, which
+      # trips its `isBuiltByBootstrapFilesCompiler` assertion — eval fails before
+      # anything builds. `optionalAttrs` makes it a no-op on Darwin (native
+      # openssl), which doesn't need the workaround anyway.
+      opensslOverlay = final: prev:
+        nixpkgs.lib.optionalAttrs prev.stdenv.hostPlatform.isLinux {
+          openssl = nixpkgs-openssl.legacyPackages.${prev.stdenv.hostPlatform.system}.openssl;
+        };
 
       forAllSystems =
         f:

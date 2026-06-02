@@ -86,4 +86,29 @@ in {
 
       mkdir -p "$out"
     '';
+
+  # Regression: the openssl pin is a Linux-only TLS workaround. Applying its
+  # overlay on Darwin injected a foreign-nixpkgs openssl into the Darwin stdenv
+  # bootstrap, tripping `isBuiltByBootstrapFilesCompiler` and breaking eval of
+  # the whole package set. The overlay must be active only on Linux: building
+  # this check uses `pkgs.stdenv`, so it eval-fails on Darwin if the overlay
+  # ever leaks back in; the drvPath contract also guards the Linux pin.
+  opensslOverlayPlatformScope = let
+    nativeOpenssl = (import pkgs.path {inherit system;}).openssl;
+    # Linux: overlay active -> pinned openssl differs from native.
+    # Darwin: overlay no-op  -> openssl identical to native.
+    contractHolds =
+      if pkgs.stdenv.hostPlatform.isLinux
+      then pkgs.openssl.drvPath != nativeOpenssl.drvPath
+      else pkgs.openssl.drvPath == nativeOpenssl.drvPath;
+  in
+    pkgs.runCommand "aspire-cli-openssl-overlay-scope-test" {
+      inherit contractHolds;
+    } ''
+      set -euo pipefail
+
+      test "$contractHolds" = "1"
+
+      mkdir -p "$out"
+    '';
 }

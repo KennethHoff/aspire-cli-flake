@@ -192,6 +192,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      # contents:write is required: with no required status checks gating the
+      # PR, `gh pr merge --auto` performs an immediate mergePullRequest, which
+      # writes the merge commit to master.
+      contents: write
       pull-requests: write
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

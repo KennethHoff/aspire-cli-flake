@@ -66,21 +66,29 @@ in {
 
   stagingBundleRuntimePath =
     pkgs.runCommand "aspire-cli-staging-runtime-path-test" {
-      nativeBuildInputs = [pkgs.coreutils pkgs.gnugrep];
-      staging = packages.aspire-cli-staging;
+      nativeBuildInputs = [pkgs.gnugrep];
+      wrapper = "${packages.aspire-cli-staging}/bin/aspire";
     } ''
       set -euo pipefail
 
-      export HOME="$PWD/home"
-      rm -rf "$HOME"
-      mkdir -p "$HOME"
+      # The wrapper must stage the CLI into a writable per-user state dir at
+      # runtime, so aspire's bundle extraction and lock file land there instead
+      # of the read-only /nix/store. Asserting the generated wrapper script is
+      # network-free; actually running `aspire update` is not (and so cannot run
+      # in the Nix build sandbox / CI).
 
-      "$staging/bin/aspire" update --debug --non-interactive >stdout 2>stderr || true
+      # Runtime root resolves from XDG_STATE_HOME, falling back to ~/.local/state.
+      grep -q 'state_home="''${XDG_STATE_HOME:-$HOME/.local/state}"' "$wrapper"
+      grep -q 'runtime_root="$state_home/aspire-cli/' "$wrapper"
 
-      grep -q "$HOME/.local/state/aspire-cli" stderr
-      grep -q ".aspire-bundle-lock" stderr
-      if grep -q "/nix/store/.*\.aspire-bundle-lock" stderr; then
-        echo "bundle lock unexpectedly used /nix/store" >&2
+      # The CLI is copied into that writable runtime dir, and that copy is what
+      # gets exec'd — not the store binary directly.
+      grep -q 'cp .*/libexec/aspire' "$wrapper"
+      grep -q 'exec "$runtime_aspire"' "$wrapper"
+
+      # The runtime path must never be hardcoded into the read-only store.
+      if grep -qE 'runtime_(root|bin|aspire)="/nix/store' "$wrapper"; then
+        echo "runtime path points into read-only /nix/store" >&2
         exit 1
       fi
 

@@ -6,12 +6,11 @@ if [[ $# -eq 0 ]]; then
   CHANNELS=(stable staging dev)
 fi
 
-SYSTEMS=("x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin")
+SYSTEMS=("x86_64-linux" "aarch64-linux" "aarch64-darwin")
 
 declare -A PLATFORM_MAP=(
   [x86_64-linux]="linux-x64"
   [aarch64-linux]="linux-arm64"
-  [x86_64-darwin]="osx-x64"
   [aarch64-darwin]="osx-arm64"
 )
 

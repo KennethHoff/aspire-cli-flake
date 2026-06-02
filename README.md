@@ -109,7 +109,6 @@ curl -sL -o /dev/null -w '%{url_effective}\n' https://aka.ms/dotnet/9/aspire/dai
 
 - `x86_64-linux`
 - `aarch64-linux`
-- `x86_64-darwin`
 - `aarch64-darwin`
 
 ## Notes

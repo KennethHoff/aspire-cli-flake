@@ -1,5 +1,8 @@
 # Aspire CLI
 
+> [!WARNING]
+> **Deprecated as of 2026-06-23.** Aspire now ships a first-party Nix package, added upstream in [microsoft/aspire#18410](https://github.com/microsoft/aspire/pull/18410). This flake is no longer maintained — use the official package instead. This repository will be archived.
+
 This is a Nix Flake for the [Aspire](https://aspire.dev) CLI tool.
 
 ## Contents
